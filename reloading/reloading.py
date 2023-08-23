@@ -251,13 +251,18 @@ def _reloading_function(fn, every=1):
         if state["reloads"] % every == 0:
             state["func"] = get_reloaded_function(caller_globals, caller_locals, fpath, fn) or state["func"]
         state["reloads"] += 1
+        fail_count = 0
+        max_fail = 3
         while True:
             try:
                 result = state["func"](*args, **kwargs)
                 return result
-            except Exception:
+            except Exception as exp:
+                fail_count += 1
                 handle_exception(fpath)
                 state["func"] = get_reloaded_function(caller_globals, caller_locals, fpath, fn) or state["func"]
+                if fail_count >= max_fail:
+                    raise exp
 
     caller_locals[fn.__name__] = wrapped
     return wrapped
